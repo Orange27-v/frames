@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frame It | AI Background Removal & Framing</title>
+    <meta name="description" content="Professional background removal and custom framing with artificial intelligence.">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playwrite+SK&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1 style="font-family: 'Playwrite SK', cursive; color: #010101 ">Golden Jubilee</h1>
+            <p class="subtitle">May the Almighty grant you divine wisdom in every venture, strength that never fails,
+                and a heart that always overflows with kindness. May this Golden Jubilee open new doors of favor, and
+                may your path be lit by His peace as you lead.</p>
+            <p class="subtitle" style="margin-top: 1rem; font-weight: 600;">Amen.</p>
+        </header>
+
+        <main class="main-card">
+            <!-- Upload Zone -->
+            <div id="dropZone" class="upload-container" style="padding: 1rem 1rem;">
+                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
+                <p class="upload-text" style="font-size: 0.8rem;">Drag and drop your image or <span>browse files</span>
+                </p>
+                <input type="file" id="imageInput" accept="image/*">
+            </div>
+
+            <!-- Preview Section -->
+            <div id="previewSection" class="preview-section">
+                <div class="preview-box">
+                    <img class="img-preview" src="/images/frame.png" alt="Frame">
+                </div>
+                <div class="preview-box">
+                    <img id="uploadPreview" class="img-preview" src="" alt="Preview">
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div id="controls" class="controls" style="display: none;">
+                <button id="resetBtn" class="btn btn-secondary">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+                <button id="processBtn" class="btn btn-primary">
+                    <span id="btnText">Process & Frame</span>
+                    <div id="loader" class="loader"></div>
+                </button>
+            </div>
+
+            <!-- Result Section -->
+            <div id="resultSection" class="result-section">
+                <div class="result-container">
+                    <img id="resultImage" src="" alt="Framed Result">
+                </div>
+                <div class="controls">
+                    <button id="downloadBtn" class="btn btn-primary">
+                        <i class="fa-solid fa-download"></i> Download Result
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer style="text-align: center; padding: 2rem; margin-top: 2rem;">
+        <img src="/images/logo-1.jpg" alt="Maton Engineering Logo"
+            style="width: 80px; height: auto; border-radius: 8px; margin-bottom: 0.5rem;">
+        <p style="color: #000; font-size: 0.8rem; font-weight: 400;">Courtesy</p>
+        <p style="color: #000; font-size: 1rem; font-weight: 600;">Maton Engineering</p>
+    </footer>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const imageInput = document.getElementById('imageInput');
+        const previewSection = document.getElementById('previewSection');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const controls = document.getElementById('controls');
+        const processBtn = document.getElementById('processBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const resultSection = document.getElementById('resultSection');
+        const resultImage = document.getElementById('resultImage');
+        const btnText = document.getElementById('btnText');
+        const loader = document.getElementById('loader');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // Handle Click Upload
+        dropZone.addEventListener('click', () => imageInput.click());
+
+        // Handle Drag & Drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--primary)';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = 'var(--border)';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFile(file);
+            }
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadPreview.src = e.target.result;
+                dropZone.style.display = 'none';
+                previewSection.style.display = 'grid';
+                controls.style.display = 'flex';
+                resultSection.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        resetBtn.addEventListener('click', () => {
+            imageInput.value = '';
+            dropZone.style.display = 'block';
+            previewSection.style.display = 'none';
+            controls.style.display = 'none';
+            resultSection.style.display = 'none';
+        });
+
+        processBtn.addEventListener('click', async () => {
+            const file = imageInput.files[0];
+            if (!file) return;
+
+            // Show loading state
+            processBtn.disabled = true;
+            btnText.style.display = 'none';
+            loader.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Processing failed');
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+
+                resultImage.src = url;
+                resultSection.style.display = 'flex';
+
+                // Scroll to result
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+
+                downloadBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'framed-image-' + Date.now() + '.png';
+                    a.click();
+                };
+
+            } catch (error) {
+                console.error(error);
+                alert('An error occurred during processing. Please try again.');
+            } finally {
+                processBtn.disabled = false;
+                btnText.style.display = 'inline';
+                loader.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+
+</html>

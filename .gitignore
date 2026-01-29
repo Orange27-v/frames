@@ -1,0 +1,12 @@
+# Golden Jubilee Frame App
+
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+uploads/
+*.png
+*.jpg
+!images/frame.png
+!images/background.png
+!images/logo-1.jpg
